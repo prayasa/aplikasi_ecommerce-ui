@@ -4,22 +4,12 @@
 
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { cva, VariantProps } from "class-variance-authority"
 import { PanelLeftIcon } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {
   Tooltip,
   TooltipContent,
@@ -29,9 +19,8 @@ import {
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-// Disederhanakan untuk menggunakan unit rem yang lebih standar di Tailwind
-const SIDEBAR_WIDTH = "w-64" // 16rem
-const SIDEBAR_WIDTH_ICON = "w-12" // 3rem
+const SIDEBAR_WIDTH = "w-64"
+const SIDEBAR_WIDTH_ICON = "w-[52px]" // Lebar yang pas untuk ikon
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContextProps = {
@@ -51,7 +40,6 @@ function useSidebar() {
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider.")
   }
-
   return context
 }
 
@@ -148,9 +136,7 @@ function Sidebar({
       )}
       {...props}
     >
-      <div className="flex h-full max-h-screen flex-col gap-2">
-        {children}
-      </div>
+      <div className="flex h-full max-h-screen flex-col">{children}</div>
     </aside>
   )
 }
@@ -167,21 +153,21 @@ function SidebarTrigger({
     <Button
       variant="ghost"
       size="icon"
-      className={cn("size-8", className)}
+      className={cn("size-8 rounded-full", className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      <PanelLeftIcon className="size-4" />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )
 }
 
 function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("flex h-16 items-center border-b px-4", className)} {...props} />
+  return <div className={cn("flex h-16 items-center border-b", className)} {...props} />
 }
 
 function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
@@ -230,16 +216,33 @@ function SidebarMenuButton({
   const Comp = asChild ? Slot : "a"
   const { state } = useSidebar()
 
+  // Memisahkan ikon dan teks dari children
+  const icon = React.Children.toArray(children).find(
+    (child) => React.isValidElement(child) && (child.type as any).displayName !== 'span'
+  );
+  const text = React.Children.toArray(children).find(
+    (child) => React.isValidElement(child) && child.type === 'span'
+  );
+
   const buttonContent = (
     <Comp
       data-active={isActive}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground transition-all hover:text-primary",
         "data-[active=true]:bg-muted data-[active=true]:text-primary data-[active=true]:font-semibold",
       )}
       {...props}
     >
-        {children}
+        {icon}
+        {/* ====================================================================== */}
+        {/* INI ADALAH PERBAIKAN UTAMA */}
+        {/* ====================================================================== */}
+        <span className={cn(
+          "overflow-hidden whitespace-nowrap transition-all duration-200",
+          state === 'collapsed' ? "w-0 opacity-0" : "w-auto opacity-100"
+        )}>
+          {(text as React.ReactElement)?.props.children}
+        </span>
     </Comp>
   )
   
@@ -254,6 +257,7 @@ function SidebarMenuButton({
 
   return buttonContent;
 }
+
 
 function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
   return <div className={cn("mt-auto border-t p-2", className)} {...props} />;

@@ -5,6 +5,9 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/auth';
 import { DollarSign, Package, Users, CreditCard } from 'lucide-react';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
+
 import {
   Card,
   CardHeader,
@@ -21,23 +24,22 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton'; // Impor Skeleton
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Interface disesuaikan dengan data backend
 interface Customer {
   customer_id: string;
   name: string;
 }
 
 interface Order {
-  id: number;
+  order_id: string;
   customer_id: string;
   total_amount: number;
   status: 'pending' | 'completed' | 'cancelled';
+  order_date: string;
   customer_name?: string; 
 }
 
-// Komponen Skeleton untuk tampilan loading
 const DashboardSkeleton = () => (
   <div className="flex flex-col gap-8">
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -96,10 +98,11 @@ export default function DashboardPage() {
           products: productsData.length,
           customers: customersData.length,
           sales: totalSales,
-          newOrders: ordersData.length,
+          newOrders: ordersData.length, // Data "Total Pesanan"
         });
 
-        setRecentOrders(ordersWithCustomerNames.slice(0, 5));
+        const sortedOrders = ordersWithCustomerNames.sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
+        setRecentOrders(sortedOrders.slice(0, 5));
         
       } catch (error) {
         console.error("Gagal mengambil data dashboard:", error);
@@ -118,7 +121,6 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* STATS CARDS */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Pendapatan</CardTitle>
@@ -159,12 +161,11 @@ export default function DashboardPage() {
         </Card>
       </div>
       <div>
-        {/* TABEL PESANAN TERBARU */}
         <Card>
           <CardHeader>
             <CardTitle>Pesanan Terbaru</CardTitle>
             <CardDescription>
-              Berikut adalah 5 pesanan terakhir yang masuk.
+              Berikut adalah 5 pesanan terakhir yang masuk ke sistem.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -173,25 +174,28 @@ export default function DashboardPage() {
                 <TableRow>
                   <TableHead>Pelanggan</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Tanggal</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-  {recentOrders.map((order) => (
-    // ===== PERBAIKAN DI SINI =====
-    <TableRow key={order.order_id}> 
-      <TableCell>
-        <div className="font-medium">{order.customer_name}</div>
-      </TableCell>
-      <TableCell>
-        <Badge variant="outline">{order.status || 'pending'}</Badge>
-      </TableCell>
-      <TableCell className="text-right">
-        Rp {(order.total_amount || 0).toLocaleString('id-ID')}
-      </TableCell>
-    </TableRow>
-  ))}
-</TableBody>
+                {recentOrders && recentOrders.map((order) => (
+                    <TableRow key={order.order_id}> 
+                    <TableCell>
+                        <div className="font-medium">{order.customer_name}</div>
+                    </TableCell>
+                    <TableCell>
+                        <Badge variant="outline">{order.status || 'pending'}</Badge>
+                    </TableCell>
+                    <TableCell>
+                        {format(new Date(order.order_date), 'dd MMM yyyy', { locale: id })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                        Rp {(order.total_amount || 0).toLocaleString('id-ID')}
+                    </TableCell>
+                    </TableRow>
+                ))}
+              </TableBody>
             </Table>
           </CardContent>
         </Card>
